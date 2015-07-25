@@ -1,0 +1,81 @@
+extends layout
+
+block content
+	h1.appTitle #{title}
+	//p Welcome to #{title}
+
+	div#chatWindowWrapper.col-md-12
+
+		div#userNameWrap
+			p Enter a user name
+			p#nickError
+			form#nickForm
+				input#nickName
+				button.btn.btn-primary(type="submit") Enter Chat Room
+
+		div#contentWrap
+			div#menu
+				h3(class="welcome") Welcome&nbsp
+					span#userName
+				//p(class="logout")
+					a(id="exit" href="#") Exit Chat
+				div(style="clear:both")
+
+			div#chatWrap.row
+				div#chat.col-md-9
+
+				div#user-list.col-md-3
+					h4.onlineHeader Online
+					div
+
+				form.col-md-12#send-message(action="")
+					input#input-message(autocomplete="off")
+					input(type='submit' autocomplete="off")
+					//button.btn.btn-primary.btn-default(type="submit") Send Message
+
+
+	script.
+
+		var $nick = '';
+
+		$('#send-message').submit(function (e) {
+			e.preventDefault();
+			socket.emit('chat message', {userName: $nick, msg: $('#input-message').val()});
+			$('#input-message').val('');
+			return false;
+		});
+
+		$('#nickForm').submit(function (e) {
+			e.preventDefault();
+			$nick = $('#nickName').val();
+			socket.emit('new user', $('#nickName').val(), function (data) {
+				if (data) {
+					$('#userNameWrap').hide();
+					$('#userName').html($nick);
+					socket.userName = $nick;
+					$('#contentWrap').show();
+					$('#menu').show();
+				} else {
+					$('#nickError').html('User name already used');
+				}
+			});
+			//$('#nickName').val('');
+		});
+
+		socket.on('new message', function (data) {
+			$('#chat').append('<div class="message">' +
+												'<h2>' + data.userName + '</h2>' +
+												'<p>'+ data.msg +'</p>'+
+												'<p class="time">'+
+												'<span class="">'+'3 mins ago' +'</span>' +
+												'</p>'+
+												'</div>');
+			//To keep scroll bar to the bottom
+			$('#chat').scrollTop($('#chat')[0].scrollHeight);
+		});
+		socket.on('user names', function (data) {
+			$('#user-list div').html('');
+			for(var i in data) {
+				$('#user-list').append('<div><h5>'+ i +'</h5></div>');
+			}
+		});
